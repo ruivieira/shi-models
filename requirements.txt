@@ -12,3 +12,6 @@ numpy
 scipy
 scikit-learn
 pandas
+pssm
+keras
+tensorflow
