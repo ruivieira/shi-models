@@ -29,10 +29,24 @@ requirements: test_environment
 data: requirements
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
 
+## Make model
+train: requirements data
+	$(PYTHON_INTERPRETER) src/models/train_model.py data/raw models/
+
+## Make container image using s2i
+s2i: requirements data train
+	cp -R models/* service/models
+	s2i build service seldonio/seldon-core-s2i-python3:1.12.0-dev ruivieira/shi-model
+
 ## Delete all compiled Python files
 clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
+	rm data/raw/*.csv
+	rm -Rf models/variables
+	rm models/*.pb
+	rm models/*.h5
+
 
 ## Lint using flake8
 lint:
