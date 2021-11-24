@@ -67,7 +67,7 @@ def main(input_filepath, output_filepath):
                                   ratio=3.0)
 
     raw_df = pd.DataFrame(raw, columns=["y"])
-
+    raw_df['day'] = list(range(364))
     raw_df.to_csv(os.path.join(input_filepath, "data.csv"),
                   index_label="t")
 

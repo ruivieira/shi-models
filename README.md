@@ -30,15 +30,27 @@ has the format
 ```json
 {
   "data": {
-    "ndarray": [[ $VALUE ]]
+    "ndarray": [[ $DAY ]]
   }
 }
 ```
 
+Where `$DAY` is the year's day number (`0...364`).
+
 As an example:
 
 ```shell
-$ curl -g http://localhost:9000/predict --data-urlencode 'json={"data":{"ndarray":[[109.0]]}}'
+$ curl -g http://localhost:9000/predict --data-urlencode 'json={"data":{"ndarray":[[271]]}}'
+```
+
+will return
+
+```json
+{"data": {
+  "names": ["t:0"],
+  "ndarray": [[87.5467300415039]]},
+  "meta":{}
+}
 ```
 
 Project Organization

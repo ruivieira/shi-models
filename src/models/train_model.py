@@ -34,26 +34,24 @@ def main(input_filepath, output_filepath):
     logger.info("Loading raw dataset")
     _df: pd.DataFrame = pd.read_csv(os.path.join(input_filepath, "data.csv"))
 
-    Y = np.array(_df["y"]).reshape(-1, 1)
-
-    N = len(Y)
-    print(N)
     scaler = MinMaxScaler(feature_range=(0, 1))
-    data = scaler.fit_transform(Y)
+
+    _df["day_scaled"] = _df.day / 364.0
+    _df['y_scaled'] = scaler.fit_transform(_df['y'].to_numpy().reshape(-1, 1))
 
     train_size = 250
-    train, test = data[:train_size, :], data[train_size:N, :]
+    _df_train = _df.loc[:train_size, :]
 
-    history = 1
-    X_train, y_train = create_offset(train, history)
-
-    X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
+    X_train = np.reshape(_df_train['day_scaled'].to_numpy(), (len(_df_train['day_scaled']), 1, 1))
+    y_train = _df_train['y_scaled'].to_numpy()
 
     model = Sequential()
-    model.add(LSTM(4, input_shape=(1, history)))
+    model.add(LSTM(50, activation='relu', return_sequences=True, input_shape=(1, 1)))
+    model.add(LSTM(50, activation='relu'))
     model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer='adam')
+    model.compile(loss='mse', optimizer='adam')
     model.fit(X_train, y_train, epochs=125, batch_size=2, verbose=2)
+
     tf.keras.models.save_model(model,
                                os.path.join(output_filepath, "model.h5"),
                                save_format="h5",
