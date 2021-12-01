@@ -4,25 +4,10 @@ from dotenv import find_dotenv, load_dotenv
 import click
 import pandas as pd
 import os
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import LSTM
-import tensorflow as tf
 import joblib
+from xgboost import XGBRegressor
 
 logger = logging.getLogger(__name__)
-
-
-def create_offset(dataset, history=1):
-    x, y = [], []
-    for i in range(len(dataset) - history - 1):
-        a = dataset[i:(i + history), 0]
-        x.append(a)
-        y.append(dataset[i + history, 0])
-    return np.array(x), np.array(y)
-
 
 @click.command()
 @click.argument("input_filepath", type=click.Path(exists=True))
@@ -34,32 +19,19 @@ def main(input_filepath, output_filepath):
     logger.info("Loading raw dataset")
     _df: pd.DataFrame = pd.read_csv(os.path.join(input_filepath, "data.csv"))
 
-    scaler = MinMaxScaler(feature_range=(0, 1))
+    # remove anomalies from training dataset
+    Y = _df['y']
+    Y_mean = Y.mean()
 
-    _df["day_scaled"] = _df.day / 364.0
-    _df['y_scaled'] = scaler.fit_transform(_df['y'].to_numpy().reshape(-1, 1))
+    bounds = [Y_mean + 3*Y.std(), Y_mean - 3*Y.std()]
+    _df['y_train'] = _df['y'].apply(
+        lambda x: x if x > bounds[1] and x < bounds[0] else Y_mean)
 
-    train_size = 250
-    _df_train = _df.loc[:train_size, :]
+    model = XGBRegressor()
+    model.fit(_df.day, _df.y_train)
 
-    X_train = np.reshape(_df_train['day_scaled'].to_numpy(), (len(_df_train['day_scaled']), 1, 1))
-    y_train = _df_train['y_scaled'].to_numpy()
-
-    model = Sequential()
-    model.add(LSTM(50, activation='relu', return_sequences=True, input_shape=(1, 1)))
-    model.add(LSTM(50, activation='relu'))
-    model.add(Dense(1))
-    model.compile(loss='mse', optimizer='adam')
-    model.fit(X_train, y_train, epochs=125, batch_size=2, verbose=2)
-
-    tf.keras.models.save_model(model,
-                               os.path.join(output_filepath, "model.h5"),
-                               save_format="h5",
-                               overwrite=True,
-                               include_optimizer=True)
-
-    # save scaler
-    joblib.dump(scaler, os.path.join(output_filepath, "scaler.joblib"))
+    # save model
+    joblib.dump(model, os.path.join(output_filepath, "model.joblib"))
 
 
 if __name__ == "__main__":

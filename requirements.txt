@@ -16,3 +16,4 @@ pssm
 keras==2.7.0
 tensorflow==2.7.0
 joblib==1.1.0
+xgboost==1.5.1
