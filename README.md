@@ -9,7 +9,7 @@ SHI test models.
 - `make train` created the serialised model and scaler (respectively in `models/model.h5` and `models/scaler.joblib`)
 - `make s2i` creates a container image (Seldon) named `ruvieira/shi-model:latest`
 
-You only need to call one target (_ie_ `make s2i` will call the `data` and `train` targets as dependencies).
+You should run the targets in the above order.
 ## Service
 
 To create the Seldon model micro-service run

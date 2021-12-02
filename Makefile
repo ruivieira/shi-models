@@ -30,11 +30,11 @@ data: requirements
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
 
 ## Make model
-train: requirements data
+train: requirements
 	$(PYTHON_INTERPRETER) src/models/train_model.py data/raw models/
 
 ## Make container image using s2i
-s2i: requirements data train
+s2i: requirements train
 	cp -R models/* service/models
 	s2i build service seldonio/seldon-core-s2i-python3:1.12.0-dev ruivieira/shi-model
 

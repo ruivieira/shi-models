@@ -23,7 +23,7 @@ class SHIModel(object):
         if not self.loaded:
             self.load()
         y = X.reshape(-1, 1)
-        prediction = self.model.predict(y)
+        prediction = np.array(self.model.predict(y)).reshape(-1, 1)
         return prediction
 
     def tags(self):
