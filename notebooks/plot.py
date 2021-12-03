@@ -15,7 +15,7 @@ def plot_comparison(model, X, y, intervals=False, show_anomalies=False):
     prediction = model.predict(X)
     
     plt.figure(figsize=(15, 7))
-    plt.plot(prediction, "g", label="prediction", linewidth=2.0, c="orange")
+    plt.plot(prediction, label="prediction", linewidth=2.0, c="orange")
     plt.plot(y.values, label="actual", linewidth=2.0, c="black")
     
     if intervals:
