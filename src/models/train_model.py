@@ -9,6 +9,7 @@ from xgboost import XGBRegressor
 
 logger = logging.getLogger(__name__)
 
+
 @click.command()
 @click.argument("input_filepath", type=click.Path(exists=True))
 @click.argument("output_filepath", type=click.Path())
@@ -22,16 +23,18 @@ def main(input_filepath, output_filepath):
     # remove anomalies from training dataset
     Y = _df['y']
     Y_mean = Y.mean()
+    Y_std = Y.std()
 
-    bounds = [Y_mean + 3*Y.std(), Y_mean - 3*Y.std()]
+    bounds = [Y_mean + 3 * Y_std, Y_mean - 3 * Y_std]
     _df['y_train'] = _df['y'].apply(
-        lambda x: x if x > bounds[1] and x < bounds[0] else Y_mean)
+        lambda x: x if bounds[1] < x < bounds[0] else Y_mean)
 
     model = XGBRegressor()
     model.fit(_df.day, _df.y_train)
 
     # save model
     joblib.dump(model, os.path.join(output_filepath, "model.joblib"))
+    joblib.dump(Y_std, os.path.join(output_filepath, "sigma.joblib"))
 
 
 if __name__ == "__main__":

@@ -11,10 +11,12 @@ class SHIModel(object):
     def __init__(self):
         self.loaded = False
         self.model = None
+        self.sigma = None
 
     def load(self):
         print("Loading model", os.getpid())
         self.model = joblib.load("./models/model.joblib")
+        self.sigma = joblib.load("./models/sigma.joblib")
         self.loaded = True
         print("Loaded model")
 
@@ -27,6 +29,18 @@ class SHIModel(object):
         y = X.reshape(-1, 1)
         prediction = np.array(self.model.predict(y)).reshape(-1, 1)
         return prediction
+
+    def _diagnosis(self, e):
+        if e > 3 * self.sigma:
+            return "dangerously high load"
+        elif e > 2 * self.sigma:
+            return "very high load"
+        elif e > self.sigma:
+            return "high load"
+        elif abs(e) < self.sigma:
+            return "normal load"
+        else:
+            return "low load"
 
     def predict_raw(self, request):
         if not self.loaded:
@@ -41,7 +55,11 @@ class SHIModel(object):
                     "current load": request.get("current load"),
                     "when": request.get("when"),
                     "host": request.get("host")}
-        response["e"] = response["current load"] - response["estimated load"]
+        e = response["current load"] - response["estimated load"]
+
+        response["e"] = e
+        response["diagnosis"] = self._diagnosis(e)
+
         return response
 
     def tags(self):
