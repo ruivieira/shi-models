@@ -28,28 +28,34 @@ The prediction REST endpoint is `GET http://localhost:9000/predict` and the payl
 has the format
 
 ```json
+
 {
-  "data": {
-    "ndarray": [[ $DAY ]]
-  }
+  "current load": NUMBER,
+  "host": STRING,
+  "when": STRING
 }
 ```
 
-Where `$DAY` is the year's day number (`0...364`).
+Where `when` is a ISO 8601 date.
 
 As an example:
 
 ```shell
-$ curl -g http://localhost:9000/predict --data-urlencode 'json={"data":{"ndarray":[[271]]}}'
+$ curl -g http://localhost:9000/predict \
+ --data-urlencode \
+ 'json={"current load": 100, "host": "foo", "when": "2021-12-14T15:26:23.123Z"}'
 ```
 
 will return
 
 ```json
-{"data": {
-  "names": ["t:0"],
-  "ndarray": [[87.5467300415039]]},
-  "meta":{}
+{
+  "current load": 100,
+  "diagnosis": "high load",
+  "e": 28.56890106201172,
+  "estimated load": 71.43109893798828,
+  "host": "foo",
+  "when": "2021-12-14T15:26:23.123Z"
 }
 ```
 
