@@ -5,7 +5,6 @@ import os
 import joblib
 import datetime
 import json
-import uuid
 
 import requests
 from cloudevents.http import CloudEvent, to_json, to_structured
@@ -64,11 +63,8 @@ class SHIModel(object):
         estimated_load = np.asscalar(predicted_load)
         e = current_load - estimated_load
 
-        _id = str(uuid.uuid4())
-
         # Create POST CloudEvent object
         post_attributes = {
-            "id": _id,
             "type": "org.drools.model.HostLoad",
             "source": "example",
             "datacontenttype": "application/json",
@@ -80,7 +76,7 @@ class SHIModel(object):
         }
         post_response = CloudEvent(post_attributes, post_data)
         post_headers, post_body = to_structured(post_response)
-        print(json.loads(to_json(post_response)))
+
         try:
             requests.post(OB_CLIENT_URI, data=post_body, headers=post_headers)
         except requests.exceptions.RequestException as ex:
@@ -89,7 +85,6 @@ class SHIModel(object):
 
         # Create this endpoints response CloudEvent object
         response_data = {
-            "id": _id,
             "host": request.get("host"),
             "current load": current_load,
             "estimated load": estimated_load,
@@ -98,7 +93,6 @@ class SHIModel(object):
             "diagnosis": self._diagnosis(e)
         }
         response_event = CloudEvent(post_attributes, response_data)
-        print(json.loads(to_json(response_event)))
         return json.loads(to_json(response_event))
 
     def tags(self):
