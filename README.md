@@ -46,17 +46,48 @@ $ curl -g http://localhost:9000/predict \
  'json={"current load": 100, "host": "foo", "when": "2021-12-14T15:26:23.123Z"}'
 ```
 
-will return
+This will result in two actions:
+
+- A response from the service
+- An HTTP `POST` request sent to a `$OB_CLIENT_URI`
+
+The response will have the format
 
 ```json
 {
-  "current load": 100,
-  "diagnosis": "high load",
-  "e": 28.56890106201172,
-  "estimated load": 71.43109893798828,
-  "host": "foo",
-  "when": "2021-12-14T15:26:23.123Z"
+  "data": {
+    "current load": 100,
+    "diagnosis": "normal load",
+    "e": -13.511276245117188,
+    "estimated load": 113.51127624511719,
+    "host": "foo",
+    "id": "116de797-23da-43b7-a30c-2d7f25e8d4e9",
+    "when":"2021-08-14T15:26:23.123Z"
+  },
+  "datacontenttype":"application/json",
+  "id":"116de797-23da-43b7-a30c-2d7f25e8d4e9",
+  "obclienturi": $OB_CLIENT_URI,
+  "source": "example",
+  "specversion": "1.0",
+  "time": "2022-01-06T16:25:53.663552+00:00",
+  "type":"org.drools.model.HostLoad"
 }
+```
+
+The HTTP `POST` will have the format
+
+```json
+{
+  "data": {
+    "host": "foo", 
+    "current load": 100
+  },
+  "id": "116de797-23da-43b7-a30c-2d7f25e8d4e9", 
+  "type": "org.drools.model.HostLoad", 
+  "source": "example", 
+  "datacontenttype": "application/json", 
+  "obclienturi": OB_CLIENT_URI,
+} 
 ```
 
 Project Organization

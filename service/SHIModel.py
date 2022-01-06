@@ -1,8 +1,17 @@
+import logging
 from typing import Iterable, Dict, Union, List
 import numpy as np
 import os
 import joblib
 import datetime
+import json
+import uuid
+
+import requests
+from cloudevents.http import CloudEvent, to_json, to_structured
+
+logger = logging.getLogger('SHIModel')
+OB_CLIENT_URI = os.getenv('OB_CLIENT_URI')
 
 
 class SHIModel(object):
@@ -51,16 +60,46 @@ class SHIModel(object):
         day = np.array(day).reshape(-1, 1)
         predicted_load = self.model.predict(day)
 
-        response = {"estimated load": np.asscalar(predicted_load),
-                    "current load": request.get("current load"),
-                    "when": request.get("when"),
-                    "host": request.get("host")}
-        e = response["current load"] - response["estimated load"]
+        current_load = request.get("current load")
+        estimated_load = np.asscalar(predicted_load)
+        e = current_load - estimated_load
 
-        response["e"] = e
-        response["diagnosis"] = self._diagnosis(e)
+        _id = str(uuid.uuid4())
 
-        return response
+        # Create POST CloudEvent object
+        post_attributes = {
+            "id": _id,
+            "type": "org.drools.model.HostLoad",
+            "source": "example",
+            "datacontenttype": "application/json",
+            "obclienturi": OB_CLIENT_URI,
+        }
+        post_data = {
+            "host": request.get("host"),
+            "current load": request.get("current load")
+        }
+        post_response = CloudEvent(post_attributes, post_data)
+        post_headers, post_body = to_structured(post_response)
+        print(json.loads(to_json(post_response)))
+        try:
+            requests.post(OB_CLIENT_URI, data=post_body, headers=post_headers)
+        except requests.exceptions.RequestException as ex:
+            logger.error("Error sending CloudEvent to %s", OB_CLIENT_URI)
+            logger.error(ex)
+
+        # Create this endpoints response CloudEvent object
+        response_data = {
+            "id": _id,
+            "host": request.get("host"),
+            "current load": current_load,
+            "estimated load": estimated_load,
+            "when": request.get("when"),
+            "e": e,
+            "diagnosis": self._diagnosis(e)
+        }
+        response_event = CloudEvent(post_attributes, response_data)
+        print(json.loads(to_json(response_event)))
+        return json.loads(to_json(response_event))
 
     def tags(self):
         return self.result
