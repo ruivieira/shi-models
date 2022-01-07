@@ -93,10 +93,16 @@ class SHIModel(object):
         }
 
         post_response = CloudEvent(post_attributes, post_data)
-        post_headers, post_body = to_structured(post_response)
 
+        post_headers, post_body = to_structured(post_response)
+        post_headers.pop('content-type')
+        post_headers['Content-Type'] = "application/json"
+
+        logger.info("Sending POST body %s", str(post_body))
+        logger.info("Sending POST headers %s", str(post_headers))
         try:
-            requests.post(_obclienturi, data=post_body, headers=post_headers)
+            logger.info("Sending POST request to %s", _obclienturi)
+            requests.post(url=_obclienturi, data=post_body, headers=post_headers)
         except requests.exceptions.RequestException as ex:
             logger.error("Error sending CloudEvent to %s", _obclienturi)
             logger.error(ex)
