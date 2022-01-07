@@ -1,5 +1,6 @@
 import logging
 from typing import Iterable, Dict, Union, List
+
 import numpy as np
 import os
 import joblib
@@ -10,7 +11,6 @@ import requests
 from cloudevents.http import CloudEvent, to_json, to_structured
 
 logger = logging.getLogger('SHIModel')
-OB_CLIENT_URI = os.getenv('OB_CLIENT_URI')
 
 
 class SHIModel(object):
@@ -54,43 +54,60 @@ class SHIModel(object):
         if not self.loaded:
             self.load()
         print(request)
-        # get day number for ISO 8601
-        day = datetime.datetime.strptime(request.get("when"), "%Y-%m-%dT%H:%M:%S.%f%z").timetuple().tm_yday
-        day = np.array(day).reshape(-1, 1)
-        predicted_load = self.model.predict(day)
 
-        current_load = request.get("current load")
-        estimated_load = np.asscalar(predicted_load)
-        e = current_load - estimated_load
+        # create a CloudEvent
+        # get day number for ISO 8601
+
+        # get attributes
+        _time = request.get("time")
+        _source = request.get("source")
+        _type = request.get("type")
+        _obclienturi = request.get("obclienturi")
+
+        # get data
+        data = request.get("data")
+        _current_load = data.get("currentLoad")
+        _host = data.get("host")
+
+        # calculate fields
+        _day = datetime.datetime.strptime(_time, "%Y-%m-%dT%H:%M:%S%f%z").timetuple().tm_yday
+        _day = np.array(_day).reshape(-1, 1)
+        _predicted_load = self.model.predict(_day)
+        _estimated_load = np.asscalar(_predicted_load)
+        _e = _current_load - _estimated_load
+        _diagnosis = self._diagnosis(_e)
 
         # Create POST CloudEvent object
         post_attributes = {
-            "type": "org.drools.model.HostLoad",
-            "source": "example",
+            "source": _source,
+            "type": _type,
             "datacontenttype": "application/json",
-            "obclienturi": OB_CLIENT_URI,
         }
+
         post_data = {
-            "host": request.get("host"),
-            "current load": request.get("current load")
+            "host": _host,
+            "current load": _current_load,
+            "estimated load": _estimated_load,
+            "e": _e,
+            "diagnosis": _diagnosis
         }
+
         post_response = CloudEvent(post_attributes, post_data)
         post_headers, post_body = to_structured(post_response)
 
         try:
-            requests.post(OB_CLIENT_URI, data=post_body, headers=post_headers)
+            requests.post(_obclienturi, data=post_body, headers=post_headers)
         except requests.exceptions.RequestException as ex:
-            logger.error("Error sending CloudEvent to %s", OB_CLIENT_URI)
+            logger.error("Error sending CloudEvent to %s", _obclienturi)
             logger.error(ex)
 
         # Create this endpoints response CloudEvent object
         response_data = {
-            "host": request.get("host"),
-            "current load": current_load,
-            "estimated load": estimated_load,
-            "when": request.get("when"),
-            "e": e,
-            "diagnosis": self._diagnosis(e)
+            "host": _host,
+            "currentLoad": _current_load,
+            "estimatedLoad": _estimated_load,
+            "e": _e,
+            "diagnosis": _diagnosis
         }
         response_event = CloudEvent(post_attributes, response_data)
         return json.loads(to_json(response_event))

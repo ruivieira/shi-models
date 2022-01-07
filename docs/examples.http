@@ -1,0 +1,18 @@
+POST http://localhost:9000/predict
+Content-Type: application/json
+
+{
+  "specversion": "1.0",
+  "id": "667e258a-8eb9-43b2-9313-22133f2c717e",
+  "source": "example",
+  "type": "org.drools.model.HostLoad",
+  "datacontenttype": "application/json",
+  "time": "2021-12-03T12:34:56Z",
+  "obclienturi": "http://localhost:8080/events",
+  "data": {
+      "host": "hostA",
+      "currentLoad": 190.0
+  }
+}
+
+###
