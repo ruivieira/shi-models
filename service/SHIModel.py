@@ -86,8 +86,8 @@ class SHIModel(object):
 
         post_data = {
             "host": _host,
-            "current load": _current_load,
-            "estimated load": _estimated_load,
+            "currentLoad": _current_load,
+            "estimatedLoad": _estimated_load,
             "e": _e,
             "diagnosis": _diagnosis
         }
